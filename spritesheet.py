@@ -18,7 +18,7 @@ class SpriteSheet(object):
             raise SystemExit(message)
     # Load a specific image from a specific rectangle
 
-    def image_at(self, rectangle, colorkey=None):
+    def image_at(self, rectangle, colorkey=None, scale=1):
         "Loads image from x,y,x+offset,y+offset"
         rect = pygame.Rect(rectangle)
         image = pygame.Surface(rect.size).convert()
@@ -27,7 +27,9 @@ class SpriteSheet(object):
             if colorkey is -1:
                 colorkey = image.get_at((0, 0))
             image.set_colorkey(colorkey, pygame.RLEACCEL)
-        return image
+
+        print(int(image.get_width() * scale), image.get_width() * scale)
+        return pygame.transform.scale(image, [int(image.get_width() * scale), int(image.get_height() * scale)])
     # Load a whole bunch of images and return them as a list
 
     def images_at(self, rects, colorkey=None):
