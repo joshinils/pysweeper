@@ -2,11 +2,11 @@ import pygame as pg
 
 tile_size = 16
 
-scale = 1
+scale = 2.5
 scaled_tile_size = int(tile_size * scale)
 scaled_scale = scaled_tile_size / tile_size
 
-board_size = (200, 200)
+board_size = (20, 25)
 screen_size = (int(board_size[0] * scaled_tile_size), int(board_size[1] * scaled_tile_size))
 
 print("       tile_size", tile_size)
