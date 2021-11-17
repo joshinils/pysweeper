@@ -2,7 +2,7 @@
 
 import pygame as pg
 from pygame import mouse
-from pygame.constants import BUTTON_RIGHT
+
 from config import *
 
 import typing
@@ -142,11 +142,18 @@ def middle_click_all(cells):
             handle_both_mouse_down([width, height], cells)
 
 
+def dirty_all_cells(cells):
+    for width in range(board_size[0]):
+        for height in range(board_size[1]):
+            cells[width][height].state_changed = True
+
+
 def main():
     cells = []
     for width in range(board_size[0]):
         cells.append([])
         for height in range(board_size[1]):
+            global scale # but why say this here?
             cells[width].append(Cell((width, height), scale=scale))
 
     set_neighbors(cells)
@@ -190,6 +197,7 @@ def main():
                 running = False
             elif event.type == pg.WINDOWRESIZED:
                 print(event, event.x, event.y)
+                dirty_all_cells(cells)
             elif event.type == pg.MOUSEBUTTONUP:
                 pos = convert_mouse_pos_to_cell(event.pos)
                 print(pos)
@@ -202,13 +210,22 @@ def main():
                         empty_revealed = cells[pos[0]][pos[1]].left_click()
                         if empty_revealed:
                             reveal_around(pos, cells)
-                elif event.button == BUTTON_RIGHT:
+                elif event.button == pg.BUTTON_RIGHT:
                     # right-click release
                     mouse_right_down = False
                     if mouse_left_down:
                         handle_both_mouse_down(pos, cells)
                     else:
                         cells[pos[0]][pos[1]].right_click()
+            elif event.type == pg.KEYUP:
+                # example event:
+                # 14496 <Event(769-KeyUp {'unicode': '-', 'key': 1073741910, 'mod': 4096, 'scancode': 86, 'window': None})> 769
+                if event.key == pg.K_KP_MINUS:  # key keypad minuscule
+                    scale -= 1
+                    print(scale)
+                if event.key == pg.K_KP_PLUS:
+                    scale += 1
+                    print(scale)
             else:
                 print(pg.time.get_ticks(), event, event.type)
 

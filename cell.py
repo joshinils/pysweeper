@@ -32,7 +32,8 @@ class CellStateEnum(Enum):
 
 
 class Cell:
-    position: typing.Tuple[int, int]
+    location: typing.Tuple[int, int] # logical position, int into array
+    position: typing.Tuple[int, int] # visual position, scaled, on screen space
     state: CellStateEnum
     state_changed: bool
     has_bomb: bool
@@ -41,22 +42,35 @@ class Cell:
     has_flag: bool
     is_depressed: bool
 
-    sprites = SpriteSheet("sprite.png")
-    global scale
-    sprite_hidden_cell = sprites.image_at((0, 47, 16, 16), scale=scale)
-    sprite_flag = sprites.image_at((16, 47, 16, 16), scale=scale)
-    sprite_question_hidden = sprites.image_at((16*2, 47, 16, 16), scale=scale)
-    sprite_question_revealed = sprites.image_at((16*3, 47, 16, 16), scale=scale)
-    sprite_bomb_revealed = sprites.image_at((16*4, 47, 16, 16), scale=scale)
-    sprite_bomb_exploded = sprites.image_at((16*5, 47, 16, 16), scale=scale)
-    sprite_bomb_wrong = sprites.image_at((16*6, 47, 16, 16), scale=scale)
-    sprite_revealed_cell = sprites.image_at((0, 63, 16, 16), scale=scale)
+    sprites_created: bool = False
+    sprite_scale: float = -1
 
-    sprite_numbers = [sprite_hidden_cell]
-    for i in range(1, 9):
-        sprite_numbers.append(sprites.image_at((i * 16, 63, 16, 16), scale=scale))
+    @staticmethod
+    def create_sprites():
+        if Cell.sprites_created == True:
+            return
+        Cell.sprites_created = True
+        Cell.sprite_scale = scale
+
+        Cell.sprites = SpriteSheet("sprite.png")
+
+        Cell.sprite_hidden_cell       = Cell.sprites.image_at((0, 47, 16, 16), scale=scale)
+        Cell.sprite_flag              = Cell.sprites.image_at((16, 47, 16, 16), scale=scale)
+        Cell.sprite_question_hidden   = Cell.sprites.image_at((16*2, 47, 16, 16), scale=scale)
+        Cell.sprite_question_revealed = Cell.sprites.image_at((16*3, 47, 16, 16), scale=scale)
+        Cell.sprite_bomb_revealed     = Cell.sprites.image_at((16*4, 47, 16, 16), scale=scale)
+        Cell.sprite_bomb_exploded     = Cell.sprites.image_at((16*5, 47, 16, 16), scale=scale)
+        Cell.sprite_bomb_wrong        = Cell.sprites.image_at((16*6, 47, 16, 16), scale=scale)
+        Cell.sprite_revealed_cell     = Cell.sprites.image_at((0, 63, 16, 16), scale=scale)
+
+        Cell.sprite_numbers = [Cell.sprite_hidden_cell]
+        for i in range(1, 9):
+            Cell.sprite_numbers.append(Cell.sprites.image_at((i * 16, 63, 16, 16), scale=scale))
 
     def __init__(self: 'Cell', location: typing.Tuple[int, int], scale: float = 1) -> 'Cell':
+        Cell.create_sprites()
+
+        self.location = location
         self.position = (location[0] * 16 * scale, location[1] * 16 * scale)
         self.has_bomb = random.random() > 0.9
 
@@ -83,6 +97,13 @@ class Cell:
     def draw(self: 'Cell', screen) -> None:
         if self.state_changed:
             self.state_changed = False
+
+            # if scale has changed outside, re-do sprites
+            print(scale, Cell.sprite_scale)
+            if scale != Cell.sprite_scale:
+                Cell.create_sprites()
+                self.position = (self.location[0] * 16 * scale, self.location[1] * 16 * scale)
+
 
             if self.has_bomb and self.is_revealed:
                 screen.blit(Cell.sprite_bomb_exploded, self.position)
