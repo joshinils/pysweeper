@@ -50,22 +50,25 @@ class Cell:
         if Cell.sprites_created == True:
             return
         Cell.sprites_created = True
-        Cell.sprite_scale = scale
+
+        #global Conf.scale
+        Cell.sprite_scale = Conf.scale
+        print("creating sprites", "Conf.scale", Conf.scale, "Cell.sprite_scale", Cell.sprite_scale)
 
         Cell.sprites = SpriteSheet("sprite.png")
 
-        Cell.sprite_hidden_cell       = Cell.sprites.image_at((0, 47, 16, 16), scale=scale)
-        Cell.sprite_flag              = Cell.sprites.image_at((16, 47, 16, 16), scale=scale)
-        Cell.sprite_question_hidden   = Cell.sprites.image_at((16*2, 47, 16, 16), scale=scale)
-        Cell.sprite_question_revealed = Cell.sprites.image_at((16*3, 47, 16, 16), scale=scale)
-        Cell.sprite_bomb_revealed     = Cell.sprites.image_at((16*4, 47, 16, 16), scale=scale)
-        Cell.sprite_bomb_exploded     = Cell.sprites.image_at((16*5, 47, 16, 16), scale=scale)
-        Cell.sprite_bomb_wrong        = Cell.sprites.image_at((16*6, 47, 16, 16), scale=scale)
-        Cell.sprite_revealed_cell     = Cell.sprites.image_at((0, 63, 16, 16), scale=scale)
+        Cell.sprite_hidden_cell       = Cell.sprites.image_at((0, 47, 16, 16), scale=Conf.scale)
+        Cell.sprite_flag              = Cell.sprites.image_at((16, 47, 16, 16), scale=Conf.scale)
+        Cell.sprite_question_hidden   = Cell.sprites.image_at((16*2, 47, 16, 16), scale=Conf.scale)
+        Cell.sprite_question_revealed = Cell.sprites.image_at((16*3, 47, 16, 16), scale=Conf.scale)
+        Cell.sprite_bomb_revealed     = Cell.sprites.image_at((16*4, 47, 16, 16), scale=Conf.scale)
+        Cell.sprite_bomb_exploded     = Cell.sprites.image_at((16*5, 47, 16, 16), scale=Conf.scale)
+        Cell.sprite_bomb_wrong        = Cell.sprites.image_at((16*6, 47, 16, 16), scale=Conf.scale)
+        Cell.sprite_revealed_cell     = Cell.sprites.image_at((0, 63, 16, 16), scale=Conf.scale)
 
         Cell.sprite_numbers = [Cell.sprite_hidden_cell]
         for i in range(1, 9):
-            Cell.sprite_numbers.append(Cell.sprites.image_at((i * 16, 63, 16, 16), scale=scale))
+            Cell.sprite_numbers.append(Cell.sprites.image_at((i * 16, 63, 16, 16), scale=Conf.scale))
 
     def __init__(self: 'Cell', location: typing.Tuple[int, int], scale: float = 1) -> 'Cell':
         Cell.create_sprites()
@@ -99,10 +102,13 @@ class Cell:
             self.state_changed = False
 
             # if scale has changed outside, re-do sprites
-            print(scale, Cell.sprite_scale)
-            if scale != Cell.sprite_scale:
+            #print("Conf.scale", Conf.scale, "Cell.sprite_scale", Cell.sprite_scale)
+
+            if Conf.scale != Cell.sprite_scale:
+                Cell.sprites_created = False
+                screen.fill([0,0,0])
                 Cell.create_sprites()
-                self.position = (self.location[0] * 16 * scale, self.location[1] * 16 * scale)
+            self.position = (self.location[0] * 16 * Conf.scale, self.location[1] * 16 * Conf.scale)
 
 
             if self.has_bomb and self.is_revealed:

@@ -3,7 +3,7 @@
 import pygame as pg
 from pygame import mouse
 
-from config import *
+from config import Conf
 
 import typing
 from cell import Cell
@@ -15,35 +15,36 @@ import numpy as np
 def set_neighbors(cell_matrix: typing.List[typing.List[Cell]]):
     a = np.zeros((len(cell_matrix), len(cell_matrix[0])))
 
-    for width in range(board_size[0]):
-        for height in range(board_size[1]):
+    for width in range(Conf.board_size[0]):
+        for height in range(Conf.board_size[1]):
             a[width][height] = cell_matrix[width][height].has_bomb
     conv = convolve(a, [[1, 1, 1], [1, 1, 1], [1, 1, 1]], mode='constant')
 
-    for width in range(board_size[0]):
-        for height in range(board_size[1]):
+    for width in range(Conf.board_size[0]):
+        for height in range(Conf.board_size[1]):
             cell_matrix[width][height].set_neighbors(conv[width][height])
 
 
 def convert_mouse_pos_to_cell(pos):
-    return (int(pos[0] / scale / tile_size), int(pos[1] / scale / tile_size))
+    return (int(pos[0] / Conf.scale / Conf.tile_size), int(pos[1] / Conf.scale / Conf.tile_size))
 
 
-def reveal_around(pos, cells):
-
-    offsets = [
+def get_offsets_list() -> typing.List[typing.Tuple[int, int]]:
+    return [
         (+1, +1),
         (+1,  0),
         (+1, -1),
-        (0, +1),
-        (0,  0),
-        (0, -1),
+        (+0, +1),
+        (+0,  0),
+        (+0, -1),
         (-1, +1),
         (-1,  0),
         (-1, -1),
     ]
 
-    for offset in offsets:
+
+def reveal_around(pos, cells):
+    for offset in get_offsets_list():
         p = (pos[0] + offset[0], pos[1] + offset[1])
         if p[0] < 0 or p[1] < 0:
             continue
@@ -60,19 +61,7 @@ def handle_both_mouse_down(pos, cells):
 
     sum_flags = 0
 
-    offsets = [
-        (+1, +1),
-        (+1,  0),
-        (+1, -1),
-        (0, +1),
-        (0,  0),
-        (0, -1),
-        (-1, +1),
-        (-1,  0),
-        (-1, -1),
-    ]
-
-    for offset in offsets:
+    for offset in get_offsets_list():
         p = (pos[0] + offset[0], pos[1] + offset[1])
         if p[0] < 0 or p[1] < 0:
             continue
@@ -86,7 +75,7 @@ def handle_both_mouse_down(pos, cells):
 
     if sum_flags == cells[pos[0]][pos[1]].neighbors:
         # reveal neighbors without flag
-        for offset in offsets:
+        for offset in get_offsets_list():
             p = (pos[0] + offset[0], pos[1] + offset[1])
             if p[0] < 0 or p[1] < 0:
                 continue
@@ -108,19 +97,7 @@ def handle_both_mouse_down(pos, cells):
 
 
 def depress(pos, cells):
-    offsets = [
-        (+1, +1),
-        (+1,  0),
-        (+1, -1),
-        (0, +1),
-        (0,  0),
-        (0, -1),
-        (-1, +1),
-        (-1,  0),
-        (-1, -1),
-    ]
-
-    for offset in offsets:
+    for offset in get_offsets_list():
         p = (pos[0] + offset[0], pos[1] + offset[1])
         if p[0] < 0 or p[1] < 0:
             continue
@@ -131,30 +108,30 @@ def depress(pos, cells):
 
 
 def undepress_all(cells):
-    for width in range(board_size[0]):
-        for height in range(board_size[1]):
+    for width in range(Conf.board_size[0]):
+        for height in range(Conf.board_size[1]):
             cells[width][height].undepress()
 
 
 def middle_click_all(cells):
-    for width in range(board_size[0]):
-        for height in range(board_size[1]):
+    for width in range(Conf.board_size[0]):
+        for height in range(Conf.board_size[1]):
             handle_both_mouse_down([width, height], cells)
 
 
 def dirty_all_cells(cells):
-    for width in range(board_size[0]):
-        for height in range(board_size[1]):
+    for width in range(Conf.board_size[0]):
+        for height in range(Conf.board_size[1]):
             cells[width][height].state_changed = True
 
 
 def main():
     cells = []
-    for width in range(board_size[0]):
+    #    global Conf.scale # but why say this here?
+    for width in range(Conf.board_size[0]):
         cells.append([])
-        for height in range(board_size[1]):
-            global scale # but why say this here?
-            cells[width].append(Cell((width, height), scale=scale))
+        for height in range(Conf.board_size[1]):
+            cells[width].append(Cell((width, height), scale=Conf.scale))
 
     set_neighbors(cells)
 
@@ -167,9 +144,9 @@ def main():
         # x, y = pg.mouse.get_pos()
         # screen.fill([x/1920 * 255, y/1080 * 255, (x*y) % 255])
 
-        for width in range(board_size[0]):
-            for height in range(board_size[1]):
-                cells[width][height].draw(screen)
+        for width in range(Conf.board_size[0]):
+            for height in range(Conf.board_size[1]):
+                cells[width][height].draw(Conf.screen)
 
         pg.display.flip()
 
@@ -221,11 +198,19 @@ def main():
                 # example event:
                 # 14496 <Event(769-KeyUp {'unicode': '-', 'key': 1073741910, 'mod': 4096, 'scancode': 86, 'window': None})> 769
                 if event.key == pg.K_KP_MINUS:  # key keypad minuscule
-                    scale -= 1
-                    print(scale)
+                    Conf.scale -= 1
+                    print(Conf.scale)
+                    dirty_all_cells(cells)
                 if event.key == pg.K_KP_PLUS:
-                    scale += 1
-                    print(scale)
+                    Conf.scale += 1
+                    print(Conf.scale)
+                    dirty_all_cells(cells)
+            elif event.type == pg.MOUSEWHEEL:
+                # example event:
+                # 19212 <Event(1027-MouseWheel {'flipped': False, 'y': -1, 'x': 0, 'which': 0, 'window': None})> 1027
+                Conf.set_scale(Conf.scale * (1 + event.y / 15 * (-event.flipped * 2 +1)))
+                print(Conf.scale)
+                dirty_all_cells(cells)
             else:
                 print(pg.time.get_ticks(), event, event.type)
 
