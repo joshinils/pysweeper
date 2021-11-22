@@ -11,18 +11,28 @@ from cell import Cell
 from scipy.ndimage import convolve
 import numpy as np
 
-
-def set_neighbors(cell_matrix: typing.List[typing.List[Cell]]):
-    a = np.zeros((len(cell_matrix), len(cell_matrix[0])))
+def set_neighbors(cells: typing.List[typing.List[Cell]]):
+    a = np.zeros((len(cells), len(cells[0])))
 
     for width in range(Conf.board_size[0]):
         for height in range(Conf.board_size[1]):
-            a[width][height] = cell_matrix[width][height].has_bomb
+            a[width][height] = cells[width][height].has_bomb
     conv = convolve(a, [[1, 1, 1], [1, 1, 1], [1, 1, 1]], mode='constant')
 
     for width in range(Conf.board_size[0]):
         for height in range(Conf.board_size[1]):
-            cell_matrix[width][height].set_neighbors(conv[width][height])
+            cells[width][height].set_neighbors(conv[width][height])
+
+def get_flagged_neighbors(cells: typing.List[typing.List[Cell]]):
+    a = np.zeros((len(cells), len(cells[0])))
+
+    for width in range(Conf.board_size[0]):
+        for height in range(Conf.board_size[1]):
+            if cells[width][height].has_bomb and cells[width][height].is_revealed:
+                a[width][height] = 1
+            elif cells[width][height].has_flag:
+                a[width][height] = 1
+    return convolve(a, [[1, 1, 1], [1, 1, 1], [1, 1, 1]], mode='constant')
 
 
 def convert_mouse_pos_to_cell(pos):
@@ -43,7 +53,7 @@ def get_offsets_list() -> typing.List[typing.Tuple[int, int]]:
     ]
 
 
-def reveal_around(pos, cells):
+def reveal_around(pos, cells: typing.List[typing.List[Cell]] ):
     for offset in get_offsets_list():
         p = (pos[0] + offset[0], pos[1] + offset[1])
         if p[0] < 0 or p[1] < 0:
@@ -55,7 +65,7 @@ def reveal_around(pos, cells):
             pass
 
 
-def handle_both_mouse_down(pos, cells):
+def handle_both_mouse_down(pos, cells: typing.List[typing.List[Cell]] ):
     if not cells[pos[0]][pos[1]].is_revealed:
         return
 
@@ -96,7 +106,7 @@ def handle_both_mouse_down(pos, cells):
                 pass
 
 
-def depress(pos, cells):
+def depress(pos, cells: typing.List[typing.List[Cell]] ):
     for offset in get_offsets_list():
         p = (pos[0] + offset[0], pos[1] + offset[1])
         if p[0] < 0 or p[1] < 0:
@@ -106,27 +116,38 @@ def depress(pos, cells):
         except:
             pass
 
+def set_muted_state(cells: typing.List[typing.List[Cell]]):
+    print("set_muted_state")
+    flags_count_neighbors = get_flagged_neighbors(cells)
+    for width in range(Conf.board_size[0]):
+        for height in range(Conf.board_size[1]):
+            old = cells[width][height].is_muted
+            new = flags_count_neighbors[width][height] == cells[width][height].neighbors
+            if old != new:
+                cells[width][height].is_muted = new
+                cells[width][height].state_changed = True
 
-def undepress_all(cells):
+
+def undepress_all(cells: typing.List[typing.List[Cell]] ):
     for width in range(Conf.board_size[0]):
         for height in range(Conf.board_size[1]):
             cells[width][height].undepress()
 
 
-def middle_click_all(cells):
+def middle_click_all(cells: typing.List[typing.List[Cell]] ):
     for width in range(Conf.board_size[0]):
         for height in range(Conf.board_size[1]):
             handle_both_mouse_down([width, height], cells)
 
 
-def dirty_all_cells(cells):
+def dirty_all_cells(cells: typing.List[typing.List[Cell]] ):
     for width in range(Conf.board_size[0]):
         for height in range(Conf.board_size[1]):
             cells[width][height].state_changed = True
 
 
 def main():
-    cells = []
+    cells: typing.List[typing.List[Cell]] = []
     #    global Conf.scale # but why say this here?
     for width in range(Conf.board_size[0]):
         cells.append([])
@@ -164,6 +185,7 @@ def main():
                     mouse_right_down = True
                 if mouse_left_down and mouse_right_down:
                     depress(pos, cells)
+
             elif event.type == pg.MOUSEMOTION:
                 pos = convert_mouse_pos_to_cell(event.pos)
                 undepress_all(cells)
@@ -172,9 +194,11 @@ def main():
 
             elif event.type == pg.QUIT:
                 running = False
+
             elif event.type == pg.WINDOWRESIZED:
                 print(event, event.x, event.y)
                 dirty_all_cells(cells)
+
             elif event.type == pg.MOUSEBUTTONUP:
                 pos = convert_mouse_pos_to_cell(event.pos)
                 print(pos)
@@ -194,6 +218,8 @@ def main():
                         handle_both_mouse_down(pos, cells)
                     else:
                         cells[pos[0]][pos[1]].right_click()
+                set_muted_state(cells)
+
             elif event.type == pg.KEYUP:
                 # example event:
                 # 14496 <Event(769-KeyUp {'unicode': '-', 'key': 1073741910, 'mod': 4096, 'scancode': 86, 'window': None})> 769

@@ -1,13 +1,14 @@
 from config import *
-from enum import Enum
+from enum import IntEnum
 from spritesheet import SpriteSheet
+from SpriteAtlas import *
 import typing
 import pygame as pg
 
 import random
 
 
-class CellStateEnum(Enum):
+class CellStateEnum(IntEnum):
     HIDDEN = -1
     REVEALED = 0
     NEIGHBORS_1 = 1
@@ -41,6 +42,7 @@ class Cell:
     is_revealed: bool
     has_flag: bool
     is_depressed: bool
+    is_muted: bool
 
     sprites_created: bool = False
     sprite_scale: float = -1
@@ -55,20 +57,21 @@ class Cell:
         Cell.sprite_scale = Conf.scale
         print("creating sprites", "Conf.scale", Conf.scale, "Cell.sprite_scale", Cell.sprite_scale)
 
-        Cell.sprites = SpriteSheet("sprite.png")
+        Cell.sprite_atlas = SpriteAtlas("sprite.png")
 
-        Cell.sprite_hidden_cell       = Cell.sprites.image_at((0, 47, 16, 16), scale=Conf.scale)
-        Cell.sprite_flag              = Cell.sprites.image_at((16, 47, 16, 16), scale=Conf.scale)
-        Cell.sprite_question_hidden   = Cell.sprites.image_at((16*2, 47, 16, 16), scale=Conf.scale)
-        Cell.sprite_question_revealed = Cell.sprites.image_at((16*3, 47, 16, 16), scale=Conf.scale)
-        Cell.sprite_bomb_revealed     = Cell.sprites.image_at((16*4, 47, 16, 16), scale=Conf.scale)
-        Cell.sprite_bomb_exploded     = Cell.sprites.image_at((16*5, 47, 16, 16), scale=Conf.scale)
-        Cell.sprite_bomb_wrong        = Cell.sprites.image_at((16*6, 47, 16, 16), scale=Conf.scale)
-        Cell.sprite_revealed_cell     = Cell.sprites.image_at((0, 63, 16, 16), scale=Conf.scale)
+        Cell.sprite_atlas.register("hidden_cell"      , (16*0, 47, 16, 16))
+        Cell.sprite_atlas.register("flag"             , (16*1, 47, 16, 16))
+        Cell.sprite_atlas.register("question_hidden"  , (16*2, 47, 16, 16))
+        Cell.sprite_atlas.register("question_revealed", (16*3, 47, 16, 16))
+        Cell.sprite_atlas.register("bomb_revealed"    , (16*4, 47, 16, 16))
+        Cell.sprite_atlas.register("bomb_exploded"    , (16*5, 47, 16, 16))
+        Cell.sprite_atlas.register("bomb_wrong"       , (16*6, 47, 16, 16))
+        Cell.sprite_atlas.register("revealed_cell"    , (   0, 63, 16, 16))
 
-        Cell.sprite_numbers = [Cell.sprite_hidden_cell]
+        #Cell.sprite_numbers = [Cell.sprite_hidden_cell]
         for i in range(1, 9):
-            Cell.sprite_numbers.append(Cell.sprites.image_at((i * 16, 63, 16, 16), scale=Conf.scale))
+            Cell.sprite_atlas.register("number_" + str(i), (i * 16, 63, 16, 16))
+            Cell.sprite_atlas.register("number_muted_" + str(i), (i * 16, 79, 16, 16))
 
     def __init__(self: 'Cell', location: typing.Tuple[int, int], scale: float = 1) -> 'Cell':
         Cell.create_sprites()
@@ -84,6 +87,7 @@ class Cell:
         self.is_revealed = False
         self.has_flag = False
         self.is_depressed = False
+        self.is_muted = False
 
     def set_neighbors(self, n: int = 0) -> None:
         if self.neighbors == n:
@@ -112,29 +116,21 @@ class Cell:
 
 
             if self.has_bomb and self.is_revealed:
-                screen.blit(Cell.sprite_bomb_exploded, self.position)
+                screen.blit(Cell.sprite_atlas.get("bomb_exploded"), self.position)
             elif self.has_flag:
-                screen.blit(Cell.sprite_flag, self.position)
+                screen.blit(Cell.sprite_atlas.get("flag"), self.position)
             elif self.state == CellStateEnum.REVEALED or (self.is_depressed):
-                screen.blit(Cell.sprite_revealed_cell, self.position)
+                screen.blit(Cell.sprite_atlas.get("revealed_cell"), self.position)
             elif self.state == CellStateEnum.HIDDEN:
-                screen.blit(Cell.sprite_hidden_cell, self.position)
-            elif self.state == CellStateEnum.NEIGHBORS_1:
-                screen.blit(Cell.sprite_numbers[1], self.position)
-            elif self.state == CellStateEnum.NEIGHBORS_2:
-                screen.blit(Cell.sprite_numbers[2], self.position)
-            elif self.state == CellStateEnum.NEIGHBORS_3:
-                screen.blit(Cell.sprite_numbers[3], self.position)
-            elif self.state == CellStateEnum.NEIGHBORS_4:
-                screen.blit(Cell.sprite_numbers[4], self.position)
-            elif self.state == CellStateEnum.NEIGHBORS_5:
-                screen.blit(Cell.sprite_numbers[5], self.position)
-            elif self.state == CellStateEnum.NEIGHBORS_6:
-                screen.blit(Cell.sprite_numbers[6], self.position)
-            elif self.state == CellStateEnum.NEIGHBORS_7:
-                screen.blit(Cell.sprite_numbers[7], self.position)
-            elif self.state == CellStateEnum.NEIGHBORS_8:
-                screen.blit(Cell.sprite_numbers[8], self.position)
+                screen.blit(Cell.sprite_atlas.get("hidden_cell"), self.position)
+            elif (
+                    self.state >= int(CellStateEnum.NEIGHBORS_1) and 
+                    self.state <= int(CellStateEnum.NEIGHBORS_8) 
+                ):
+                muted = ""
+                if self.is_muted:
+                    muted = "muted_"
+                screen.blit(Cell.sprite_atlas.get("number_" + muted + str(int(self.state))), self.position)
             else:
                 print("state:", self.state)
 
@@ -148,7 +144,6 @@ class Cell:
         if self.has_flag:
             return
 
-        self.has_flag = False
         if not self.is_revealed:
             self.is_revealed = True
             self.state = CellStateEnum(self.neighbors)

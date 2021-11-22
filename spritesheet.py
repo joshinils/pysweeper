@@ -13,6 +13,7 @@ class SpriteSheet(object):
     def __init__(self, filename):
         try:
             self.sheet = pygame.image.load(filename).convert()
+            print(type(self.sheet))
         except pygame.error as message:
             print('Unable to load spritesheet image:', filename)
             raise SystemExit(message)
@@ -28,7 +29,7 @@ class SpriteSheet(object):
                 colorkey = image.get_at((0, 0))
             image.set_colorkey(colorkey, pygame.RLEACCEL)
 
-        print(int(image.get_width() * scale), image.get_width() * scale)
+        # print(int(image.get_width() * scale), image.get_width() * scale)
         return pygame.transform.scale(image, [int(image.get_width() * scale), int(image.get_height() * scale)])
     # Load a whole bunch of images and return them as a list
 
