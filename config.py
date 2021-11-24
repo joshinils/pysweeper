@@ -30,8 +30,10 @@ class Conf:
     print("     screen_size", screen_size)
 
     pg.init()
-    screen = pg.display.set_mode(screen_size, pg.RESIZABLE)
-    clock = pg.time.Clock()
+    screen: pg.Surface = pg.display.set_mode(screen_size, pg.RESIZABLE)
+    play_area = pg.Rect(0, 0, screen_size[0], screen_size[1])
+
+    clock: pg.time.Clock = pg.time.Clock()
 
     color_default = pg.Color("#C0C0C0")
     color_shadow = pg.Color("#808080")
